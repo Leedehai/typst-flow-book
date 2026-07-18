@@ -21,9 +21,11 @@
     #include "example-dedication.typ"
   ],
   show-table-of-contents: true,
-  appendix: [
-    #include "example-appendix.typ"
-  ],
+  appendicies: (
+    [
+      #include "example-appendix.typ"
+    ],
+  ),
   show-index: true,
 )
 
@@ -46,7 +48,7 @@ A#book.note[This is a side note. #lorem(20)] #lorem(200)
 
 #lorem(200)
 
-= Discussion and yadda yadda yadda
+= Discussion and ya d da ya dda ya dd a
 
 == Image
 
