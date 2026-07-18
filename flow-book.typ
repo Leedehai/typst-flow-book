@@ -10,8 +10,9 @@
 // ```
 
 #import "@preview/marginalia:0.3.1" as marginalia
-#import "@preview/in-dexter:0.7.2": make-index
+#import "@preview/in-dexter:0.7.2": index, make-index
 #import "@preview/suboutline:0.3.0": suboutline
+#import "@preview/hydra:0.6.3": hydra
 
 // Put a side note. Usage:
 // ```
@@ -22,6 +23,15 @@
   numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)#h(2pt)]),
 )
 
+// Put an indexed term. Usage:
+// ```
+// This is called #indexed[Computation Offloading].
+// That is called #indexed(fmt: strong)[Reverse Computation Offloading].
+// ```
+#let indexed(term) = {
+  term + index(term)
+}
+
 // The entry point. Usage:
 // ```
 // #show flow-book.with(title: "My Awesome Book", ...)
@@ -30,7 +40,11 @@
 // ```
 #let flow-book(
   title: "",
+  subtitle: "",
+  titlehead: "",
   author: "",
+  publisher: "",
+  display-build-date: false,
   cover-page: none,
   copyright-page: none,
   opening-page: none,
@@ -43,6 +57,7 @@
   show-chapter-outline: true, // New parameter to toggle chapter mini-outlines
   appendix: none,
   show-index: false,
+  margin-note-width: 5.2cm,
   body,
 ) = {
   // --- HELPER FUNCTION ---
@@ -52,10 +67,26 @@
   }
 
   // ------------------------------- FRONTMATTER -------------------------------
-  if cover-page != none {
-    odd-pagebreak()
-    cover-page
-  }
+  odd-pagebreak()
+  /*Cover page*/
+  [
+    #text[#titlehead]
+    #align(center)[
+      #v(1fr)
+      #text(size: 2.5em, weight: "bold")[#title] \
+      #v(1em)
+      #text(size: 1.5em, weight: "bold")[#subtitle] \
+      #if display-build-date {
+        v(1em)
+        text(size: 1.5em)[#datetime.today().display()]
+      }
+      #v(2fr)
+      #text(size: 1.5em)[#author]
+      #v(1em)
+      #text(size: 1.5em)[#publisher]
+      #v(1fr)
+    ]
+  ]
 
   if copyright-page != none {
     pagebreak(weak: true)
@@ -116,16 +147,16 @@
     let vals = nums.pos() // Get the current heading numbers as an array
 
     if vals.len() == 1 {
-      // If it's a Level 1 heading, output "Chapter X"
-      "Chapter " + str(vals.first())
+      // If it's a level-1 heading
+      numbering("1.", ..vals)
     } else {
-      // If it's a subheading, use standard "1.1" decimal numbering
+      // If it's a subheading
       numbering("1.1", ..vals)
     }
   })
 
   // Configure marginalia layout (side notes)
-  let note-width = 5.2cm
+  let note-width = margin-note-width
   let note-sep = 1em
   let breakout-width = note-width + note-sep
   show: marginalia.setup.with(
@@ -134,16 +165,85 @@
   )
 
   // Configure the page number position
-  set page(numbering: "1", footer: context {
-    let page_num = counter(page).get().first()
-    let align_side = if calc.odd(page_num) { right } else { left }
-    let wide-block = block(width: 100% + breakout-width, align(align_side, str(page_num)))
-    if calc.even(page_num) {
-      move(dx: -breakout-width, wide-block)
-    } else {
-      wide-block
-    }
-  })
+  set page(
+    numbering: "1",
+    number-align: center + top,
+    header: context {
+      let current-page = here().page()
+
+      let heading-to-show = none
+      // 1. Look for a level-1 heading starting on this EXACT page
+      let headings-on-page = query(heading.where(level: 1)).filter(h => h.location().page() == current-page)
+      if headings-on-page.len() > 0 {
+        heading-to-show = headings-on-page.first()
+      } else {
+        // 2. Look for a level-2 heading starting on this EXACT page
+        let headings-on-page = query(heading.where(level: 2)).filter(h => h.location().page() == current-page)
+        if headings-on-page.len() > 0 {
+          heading-to-show = headings-on-page.first()
+        } else {
+          // 3. Fall back to the most recent level-2 heading from past pages
+          let past-headings = query(heading.where(level: 2).before(here()))
+          if past-headings != () {
+            heading-to-show = past-headings.last()
+          }
+        }
+      }
+
+      // If there's a heading to show, extract its number and construct the layout
+      if heading-to-show != none {
+        let chapter-num = counter(heading).at(heading-to-show.location())
+        let (formatted-num, formatted-heading) = if heading-to-show.level == 1 {
+          (
+            box(width: 1cm)[
+              #text(size: 2.5em, weight: "bold")[
+                #numbering("1.1", ..chapter-num)
+              ]
+            ],
+            [],
+          )
+        } else {
+          (
+            box(width: 1cm)[
+              #text(style: "italic")[#numbering("1.1", ..chapter-num)]
+            ],
+            text(style: "italic")[#heading-to-show.body],
+          )
+        }
+
+        let line = box(line(length: 10em, angle: 90deg, stroke: 0.8pt))
+
+        let page_num = counter(page).get().first()
+        let align_side = if calc.odd(page_num) { right } else { left }
+        if calc.even(page_num) {
+          let wide-block = block(
+            width: 100% + breakout-width,
+            align(align_side, [#formatted-num#h(1em)#line#h(1em)#formatted-heading]),
+          )
+          move(dx: -breakout-width, wide-block)
+        } else {
+          let wide-block = block(
+            width: 100% + breakout-width,
+            align(align_side, [#formatted-heading#h(1em)#line#h(1em)#formatted-num]),
+          )
+          wide-block
+        }
+      }
+    },
+    footer: context {
+      let page_num = counter(page).get().first()
+      let align_side = if calc.odd(page_num) { right } else { left }
+      let wide-block = block(
+        width: 100% + breakout-width,
+        align(align_side, text[#page_num]),
+      )
+      if calc.even(page_num) {
+        move(dx: -breakout-width, wide-block)
+      } else {
+        wide-block
+      }
+    },
+  )
 
   // Remove the separator from the footnote.entry rule, because it
   // is hard to get the starting point of the separator line right,
@@ -169,28 +269,32 @@
     }
   }
 
-  // Configure chapter page start and mini-outlines
-  // Applies to all Level 1 headings in the main body
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
-
-    it // Render the chapter title
+    counter(footnote).update(0)
+    marginalia.notecounter.update(0)
 
     // Inject the mini-TOC right below it
     if show-chapter-outline {
-      v(0.5em)
-      pad(left: 1.5em, right: 1.5em)[
-        #suboutline(depth: 2) // Customize depth as needed
-      ]
-      v(1.5em)
+      marginalia.note(
+        numbering: none,
+        block(
+          width: note-width,
+          text(style: "italic")[
+            #suboutline(depth: 2)
+          ],
+        ),
+      )
     }
+
+    text(size: 1.2em)[#it] // Render the title
+    v(1.5em)
   }
 
-  // Reset counters at each chapter
-  show heading.where(level: 1): it => {
-    counter(footnote).update(0)
-    marginalia.notecounter.update(0)
-    it
+  show heading.where(level: 2): it => {
+    v(1em)
+    it // Render the title
+    v(1em)
   }
 
   body // This is the main body
@@ -208,6 +312,6 @@
   if show-index {
     odd-pagebreak()
     heading(level: 1, numbering: none)[Index]
-    make-index()
+    columns(2)[#make-index(use-page-counter: true)]
   }
 }
