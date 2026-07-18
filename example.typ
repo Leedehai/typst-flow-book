@@ -4,16 +4,16 @@
 #show math.equation: set text(font: "STIX Two Math")
 
 #show: book.setup.with(
-  title: "My Awesome Book",
-  subtitle: "From Good To Great",
-  title-head: "The Awesome Works Series",
-  author: "Jane Doe",
-  publisher: "The Legendary Press",
-  versioning: (build-date-pattern: "[year]-[month]-[day]", version: "v1.0"),
+  title: "The Flow Book Template",
+  subtitle: text(style: "italic")[Featuring side notes and more],
+  title-head: "Typst template",
+  author: "Leedehai",
+  publisher: "The Typst Community",
+  versioning: (build-date-pattern: "[year]-[month]-[day]", version: "v0.1.0"),
   paper-size: "us-letter",
   copyright-page: [
     #align(bottom)[
-      © 2026 Jane Doe. All rights reserved.
+      © 2026 Leedehai.
     ]
   ],
   dedication-page: [

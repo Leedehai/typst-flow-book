@@ -72,10 +72,11 @@
   show-table-of-contents: false,
   show-list-of-figures: false,
   show-list-of-tables: false,
-  show-chapter-outline: true, // New parameter to toggle chapter mini-outlines
+  show-chapter-outline: true,
   appendix: none,
   show-index: false,
   margin-note-width: 5.2cm,
+  page-number-align: auto,
   body,
 ) = {
   // --- HELPER FUNCTION ---
@@ -104,11 +105,11 @@
     }
     #align(center)[
       #v(1fr)
-      #text(size: 36pt, weight: "bold")[#title] \
+      #text(size: 28pt, weight: "bold")[#title] \
       #v(1em)
-      #text(size: 16pt, weight: "bold")[#subtitle] \
+      #text(size: 21pt)[#subtitle] \
       #v(2fr)
-      #text(size: 24pt)[#author]
+      #text(size: 21pt)[#author]
       #v(1em)
       #text(size: 16pt)[#publisher]
       #v(1fr)
@@ -243,32 +244,23 @@
         let page-num = counter(page).get().first()
         let align-side = if calc.odd(page-num) { right } else { left }
         if calc.odd(page-num) {
-          let wide-block = block(
-            width: 100% + breakout-width,
-            align(align-side, [#formatted-heading#h(1em)#line#h(1em)#formatted-num]),
-          )
-          wide-block
+          marginalia.wideblock(align(align-side, [
+            #formatted-heading#h(1em)#line#h(1em)#formatted-num
+          ]))
         } else {
-          let wide-block = block(
-            width: 100% + breakout-width,
-            align(align-side, [#formatted-num#h(1em)#line#h(1em)#formatted-heading]),
-          )
-          move(dx: -breakout-width, wide-block)
+          marginalia.wideblock(align(align-side, [
+            #formatted-num#h(1em)#line#h(1em)#formatted-heading
+          ]))
         }
       }
     },
     footer: context {
       let page-num = counter(page).get().first()
-      let align-side = if calc.odd(page-num) { right } else { left }
-      let wide-block = block(
-        width: 100% + breakout-width,
-        align(align-side, text[#page-num]),
-      )
-      if calc.odd(page-num) {
-        wide-block
+      marginalia.wideblock(if page-number-align != auto {
+        align(page-number-align)[#page-num]
       } else {
-        move(dx: -breakout-width, wide-block)
-      }
+        [#page-num]
+      })
     },
   )
 
@@ -280,7 +272,6 @@
   // Forces the footnote text to span the text block + margin width
   // and forces the entry body to appear like an enumerated list entry
   show footnote.entry: it => context {
-    let page-num = counter(page).get().first()
     let loc = it.note.location()
     let num = counter(footnote).at(loc).first()
     let enum-like-entry = enum(
@@ -288,12 +279,7 @@
       body-indent: 1em,
       enum.item(num)[#it.note.body],
     )
-    let wide-block = block(width: 100% + breakout-width, enum-like-entry)
-    if calc.odd(page-num) {
-      wide-block
-    } else {
-      move(dx: -breakout-width, wide-block)
-    }
+    marginalia.wideblock(enum-like-entry)
   }
 
   show heading.where(level: 1): it => {
