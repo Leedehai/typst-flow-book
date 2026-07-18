@@ -14,37 +14,55 @@
 #import "@preview/suboutline:0.3.0": suboutline
 #import "@preview/hydra:0.6.3": hydra
 
-// Put a side note. Usage:
-// ```
-// foo#sidenote[This is a side note]
-// ```
-#let sidenote = marginalia.note.with(
-  anchor-numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)]),
-  numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)#h(2pt)]),
+/// Put a side note. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// foo#book.note[This is a side note]
+/// ```
+#let note = marginalia.note.with(
+  numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)]),
 )
 
-// Put an indexed term. Usage:
-// ```
-// This is called #indexed[Computation Offloading].
-// That is called #indexed(fmt: strong)[Reverse Computation Offloading].
-// ```
+/// Put a side note figure. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// foo#book.notefigure[This is a side note]
+/// ```
+#let notefigure = marginalia.notefigure
+
+/// Put a block of content that occupies both the main text and the
+/// margin that's otherwise reserved for side ntoes. Useful for
+/// wide figures and tables, etc. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #book.wideblock[...]
+/// ```
+#let wideblock = marginalia.wideblock
+
+/// Put an indexed term. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// This is called #book.indexed[Computation Offloading].
+/// ```
 #let indexed(term) = {
   term + index(term)
 }
 
-// The entry point. Usage:
-// ```
-// #show flow-book.with(title: "My Awesome Book", ...)
-//
-// Your content here.
-// ```
-#let flow-book(
+/// The setup. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #show book.setup.with(title: "My Awesome Book", ...)
+///
+/// Your content here.
+/// ```
+#let setup(
   title: "",
   subtitle: "",
-  titlehead: "",
+  title-head: "",
   author: "",
   publisher: "",
-  display-build-date: false,
+  versioning: (build-date-pattern: auto, version: "version 1.0"),
+  paper-size: "a4",
   cover-page: none,
   copyright-page: none,
   opening-page: none,
@@ -66,24 +84,33 @@
     pagebreak(to: "odd", weak: true)
   }
 
+  // --------------------------------- GLOBAL ----------------------------------
+  set page(paper: paper-size)
+
   // ------------------------------- FRONTMATTER -------------------------------
   odd-pagebreak()
   /*Cover page*/
   [
-    #text[#titlehead]
+    #title-head
+    #if versioning != none {
+      h(1fr)
+      let version = if versioning.at("version", default: none) != none {
+        versioning.version
+      }
+      let date = if versioning.at("build-date-pattern", default: none) != none {
+        datetime.today().display(versioning.build-date-pattern)
+      }
+      (version, date).join(h(1em))
+    }
     #align(center)[
       #v(1fr)
-      #text(size: 2.5em, weight: "bold")[#title] \
+      #text(size: 36pt, weight: "bold")[#title] \
       #v(1em)
-      #text(size: 1.5em, weight: "bold")[#subtitle] \
-      #if display-build-date {
-        v(1em)
-        text(size: 1.5em)[#datetime.today().display()]
-      }
+      #text(size: 16pt, weight: "bold")[#subtitle] \
       #v(2fr)
-      #text(size: 1.5em)[#author]
+      #text(size: 24pt)[#author]
       #v(1em)
-      #text(size: 1.5em)[#publisher]
+      #text(size: 16pt)[#publisher]
       #v(1fr)
     ]
   ]
@@ -164,7 +191,7 @@
     book: true, // Alternates margins per page
   )
 
-  // Configure the page number position
+  // Configure the page for main body
   set page(
     numbering: "1",
     number-align: center + top,
