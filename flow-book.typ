@@ -23,7 +23,9 @@
   numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)]),
 )
 
-/// Put a side note figure. Usage:
+/// Put a side note figure. Use `dy` to adjust y-position if needed.
+///
+/// Usage:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
 /// foo#book.notefigure[This is a side note]
@@ -92,7 +94,9 @@
   odd-pagebreak()
   /*Cover page*/
   [
-    #title-head
+    #if title-head != none {
+      title-head
+    }
     #if versioning != none {
       h(1fr)
       let version = if versioning.at("version", default: none) != none {
@@ -218,38 +222,39 @@
         }
       }
 
-      // If there's a heading to show, extract its number and construct the layout
+      // If there's a heading to show, take its number and construct the layout
       if heading-to-show != none {
         let chapter-num = counter(heading).at(heading-to-show.location())
-        let (formatted-num, formatted-heading) = if heading-to-show.level == 1 {
+        let (formatted-num, formatted-divider, formatted-heading) = if heading-to-show.level == 1 {
           (
-            box(width: 1cm)[
-              #text(size: 2.5em, weight: "bold")[
-                #numbering("1.1", ..chapter-num)
-              ]
-            ],
+            [],
+            [],
             [],
           )
         } else {
           (
-            box(width: 1cm)[
-              #text(style: "italic")[#numbering("1.1", ..chapter-num)]
-            ],
+            text(style: "italic")[#numbering("1.1", ..chapter-num)],
+            box(line(length: 10em, angle: 90deg, stroke: 0.8pt)),
             text(style: "italic")[#heading-to-show.body],
           )
         }
 
-        let line = box(line(length: 10em, angle: 90deg, stroke: 0.8pt))
-
         let page-num = counter(page).get().first()
-        let align-side = if calc.odd(page-num) { right } else { left }
         if calc.odd(page-num) {
-          marginalia.wideblock(align(align-side, [
-            #formatted-heading#h(1em)#line#h(1em)#formatted-num
+          marginalia.wideblock(align(right, [
+            #formatted-heading
+            #h(1em)
+            #formatted-divider
+            #h(1em)
+            #box(width: 1cm)[#align(right.inv())[#formatted-num]]
           ]))
         } else {
-          marginalia.wideblock(align(align-side, [
-            #formatted-num#h(1em)#line#h(1em)#formatted-heading
+          marginalia.wideblock(align(left, [
+            #box(width: 1cm)[#align(left.inv())[#formatted-num]]
+            #h(1em)
+            #formatted-divider
+            #h(1em)
+            #formatted-heading
           ]))
         }
       }
@@ -287,6 +292,43 @@
     counter(footnote).update(0)
     marginalia.notecounter.update(0)
 
+    let page-num = counter(page).get().first()
+    if it.numbering == none {
+      text(size: 1.5em)[#it.body]
+    } else {
+      let formatted-heading = text(size: 1.5em)[#it.body]
+      let formatted-num = text(size: 3em)[#counter(heading).at(it.location()).first()]
+      if calc.odd(page-num) {
+        let chapter-header = align(right)[
+          #box(width: page.width - margin-note-width - page.margin.outside)[#formatted-heading]
+          #h(1em)
+          #box(width: margin-note-width)[#align(right.inv())[#h(1em)#formatted-num]]
+        ]
+        marginalia.wideblock([
+          #place(top + right, dx: -margin-note-width, dy: measure(chapter-header).height, line(
+            length: 10em,
+            angle: 270deg,
+          ))
+          #chapter-header
+          #v(1em)
+        ])
+      } else {
+        let chapter-header = align(left)[
+          #box(width: margin-note-width)[#align(left.inv())[#formatted-num#h(1em)]]
+          #h(1em)
+          #box(width: page.width - margin-note-width - page.margin.outside)[#formatted-heading]
+        ]
+        marginalia.wideblock([
+          #place(top + left, dx: margin-note-width, dy: measure(chapter-header).height, line(
+            length: 10em,
+            angle: 270deg,
+          ))
+          #chapter-header
+          #v(1em)
+        ])
+      }
+    }
+
     // Inject the mini-TOC right below it
     if show-chapter-outline {
       marginalia.note(
@@ -294,14 +336,13 @@
         block(
           width: note-width,
           text(style: "italic")[
-            #suboutline(depth: 2)
+            #suboutline(depth: 1)
           ],
         ),
       )
     }
 
-    text(size: 1.2em)[#it] // Render the title
-    v(1.5em)
+    v(1em)
   }
 
   show heading.where(level: 2): it => {
@@ -313,8 +354,13 @@
   body // This is the main body
 
   // ------------------------------- BACKMATTER --------------------------------
-  // Disable the chapter outline show rule for backmatter
+  // Disable the chapter suboutline show rule
   show heading.where(level: 1): it => it
+
+  // Disable margin notes
+  show: marginalia.setup.with(
+    outer: (width: 0pt, sep: 0pt, far: 2.5cm),
+  )
 
   if appendix != none {
     odd-pagebreak()
