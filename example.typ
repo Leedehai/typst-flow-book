@@ -10,7 +10,7 @@
   title-head: "Typst Template for Books",
   author: "Leedehai",
   publisher: "The Typst Community",
-  versioning: (build-date-pattern: "[year]-[month]-[day]", version: "v0.1.0"),
+  versioning: (build-date: "[year]-[month]-[day]", version: "v0.1.0"),
   paper-size: "us-letter",
   copyright-page: [
     #align(bottom)[
@@ -20,10 +20,15 @@
   dedication-page: [
     #include "example-dedication.typ"
   ],
+  preface: [
+    #lorem(200)
+  ],
   show-table-of-contents: true,
-  appendicies: (
+  appendices: (
+    [#include "example-appendix.typ"],
     [
-      #include "example-appendix.typ"
+      = Another added article
+      #lorem(500)
     ],
   ),
   show-index: true,
@@ -66,4 +71,19 @@ A#book.note[This is a side note. #lorem(20)] #lorem(200)
 
 #lorem(200)#footnote[This is a footnote #lorem(20)]
 
-#include "example-chapter.typ"
+= More Discussion Without Subsections
+
+#lorem(500)
+
+= Conclusion
+
+#lorem(200)#book.note[This is a side note. #lorem(20)]#footnote[This is a footnote.]
+
+== Practical implications
+
+#lorem(200)
+
+== Futher works
+
+#lorem(200)#book.note[This is a side note. #lorem(20)]#footnote[This is a footnote.]
+// #include "example-chapter.typ"
