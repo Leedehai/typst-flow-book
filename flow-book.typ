@@ -240,34 +240,34 @@
 
         let line = box(line(length: 10em, angle: 90deg, stroke: 0.8pt))
 
-        let page_num = counter(page).get().first()
-        let align_side = if calc.odd(page_num) { right } else { left }
-        if calc.even(page_num) {
+        let page-num = counter(page).get().first()
+        let align-side = if calc.odd(page-num) { right } else { left }
+        if calc.odd(page-num) {
           let wide-block = block(
             width: 100% + breakout-width,
-            align(align_side, [#formatted-num#h(1em)#line#h(1em)#formatted-heading]),
+            align(align-side, [#formatted-heading#h(1em)#line#h(1em)#formatted-num]),
           )
-          move(dx: -breakout-width, wide-block)
+          wide-block
         } else {
           let wide-block = block(
             width: 100% + breakout-width,
-            align(align_side, [#formatted-heading#h(1em)#line#h(1em)#formatted-num]),
+            align(align-side, [#formatted-num#h(1em)#line#h(1em)#formatted-heading]),
           )
-          wide-block
+          move(dx: -breakout-width, wide-block)
         }
       }
     },
     footer: context {
-      let page_num = counter(page).get().first()
-      let align_side = if calc.odd(page_num) { right } else { left }
+      let page-num = counter(page).get().first()
+      let align-side = if calc.odd(page-num) { right } else { left }
       let wide-block = block(
         width: 100% + breakout-width,
-        align(align_side, text[#page_num]),
+        align(align-side, text[#page-num]),
       )
-      if calc.even(page_num) {
-        move(dx: -breakout-width, wide-block)
-      } else {
+      if calc.odd(page-num) {
         wide-block
+      } else {
+        move(dx: -breakout-width, wide-block)
       }
     },
   )
@@ -289,10 +289,10 @@
       enum.item(num)[#it.note.body],
     )
     let wide-block = block(width: 100% + breakout-width, enum-like-entry)
-    if calc.even(page-num) {
-      move(dx: -breakout-width, wide-block)
-    } else {
+    if calc.odd(page-num) {
       wide-block
+    } else {
+      move(dx: -breakout-width, wide-block)
     }
   }
 
