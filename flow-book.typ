@@ -10,9 +10,10 @@
 // ```
 
 #import "@preview/marginalia:0.3.1" as marginalia
-#import "@preview/in-dexter:0.7.2": index, make-index
-#import "@preview/suboutline:0.3.0": suboutline
+#import "@preview/in-dexter:0.7.2": index
 #import "@preview/hydra:0.6.3": hydra
+
+#import "lib.typ": setup-impl
 
 /// Put a side note. Usage:
 /// ```
@@ -65,7 +66,6 @@
   publisher: "",
   versioning: (build-date: auto, version: "version 1.0"),
   paper-size: "a4",
-  cover-page: none,
   copyright-page: none,
   opening-page: none,
   dedication-page: none,
@@ -80,342 +80,26 @@
   margin-note-metrics: (width: 5.2cm, sep: 1em),
   body,
 ) = {
-  // --- HELPER FUNCTION ---
-  // Forces the next content to start on an odd-numbered (right-hand) page
-  let odd-pagebreak() = {
-    pagebreak(to: "odd", weak: true)
-  }
-
-  // --------------------------------- GLOBAL ----------------------------------
-  set page(paper: paper-size)
-  set super(size: 0.8em)
-
-  // ------------------------------- FRONTMATTER -------------------------------
-  {
-    odd-pagebreak()
-    // Cover page
-    [
-      #if title-head != none {
-        title-head
-      }
-      #if versioning != none {
-        h(1fr)
-        let version = if versioning.at("version", default: none) != none {
-          versioning.version
-        }
-        let date = if versioning.at("build-date", default: none) != none {
-          datetime.today().display(versioning.build-date)
-        }
-        (version, date).join(h(1em))
-      }
-      #align(center)[
-        #v(1fr)
-        #text(size: 28pt, weight: "bold")[#title] \
-        #v(1em)
-        #text(size: 21pt)[#subtitle] \
-        #v(2fr)
-        #text(size: 21pt)[#author]
-        #v(1em)
-        #text(size: 16pt)[#publisher]
-        #v(1em)
-      ]
-    ]
-
-    if copyright-page != none {
-      pagebreak(weak: true)
-      copyright-page
-    }
-
-    if opening-page != none {
-      odd-pagebreak()
-      opening-page
-    }
-
-    if dedication-page != none {
-      odd-pagebreak()
-      dedication-page
-    }
-
-    if foreword != none {
-      odd-pagebreak()
-      set page(numbering: "i")
-      counter(heading).update(0)
-      heading(level: 1, numbering: none)[Foreword]
-      foreword
-    }
-
-    if preface != none {
-      odd-pagebreak()
-      set page(numbering: "i")
-      counter(heading).update(0)
-      heading(level: 1, numbering: none)[Preface]
-      preface
-    }
-
-    if show-table-of-contents {
-      odd-pagebreak()
-      outline(title: [Table of Contents], indent: auto)
-    }
-
-    if show-list-of-figures {
-      odd-pagebreak()
-      outline(title: [List of Figures], target: figure.where(kind: image))
-    }
-
-    if show-list-of-tables {
-      odd-pagebreak()
-      outline(title: [List of Tables], target: figure.where(kind: table))
-    }
-  } // Scoped
-
-  // ------------------------ BODY (MAIN AND APPENDICES) -----------------------
-  {
-    odd-pagebreak()
-    counter(heading).update(0)
-
-    set par(justify: true)
-    set heading(numbering: "1.1")
-
-    // Configure marginalia layout (side notes)
-    let note-width = margin-note-metrics.width
-    let note-sep = margin-note-metrics.sep
-    let breakout-width = note-width + note-sep
-    show: marginalia.setup.with(
-      outer: (width: note-width, sep: note-sep, far: 2cm),
-      book: true, // Alternates margins per page
-    )
-
-    set page(
-      numbering: "1",
-      number-align: center + top,
-      header: context {
-        let current-page = here().page()
-
-        let heading-to-show = none
-        let page-has-level-1 = false
-        // 1. Look for a level-1 heading starting on this EXACT page
-        let headings-on-page = query(heading.where(level: 1)).filter(
-          h => h.location().page() == current-page,
-        )
-        if headings-on-page.len() > 0 {
-          heading-to-show = headings-on-page.first()
-          page-has-level-1 = true
-        } else {
-          // 2. Look for a level-2 heading starting on this EXACT page
-          let headings-on-page = query(heading.where(level: 2)).filter(
-            h => h.location().page() == current-page,
-          )
-          if headings-on-page.len() > 0 {
-            heading-to-show = headings-on-page.first()
-          } else {
-            // 3. Fall back to the last level-1 or level-2 heading in past pages
-            let past-headings = query(heading.where(level: 1).or(heading.where(level: 2)).before(here()))
-            if past-headings != () {
-              heading-to-show = past-headings.last()
-            }
-          }
-        }
-
-        // If there's a heading to show, take its number and construct the layout
-        if heading-to-show != none {
-          let chapter-num = counter(heading).at(heading-to-show.location())
-          let formatted = if heading-to-show.level == 1 and page-has-level-1 {
-            (
-              num: [],
-              divider: [],
-              heading: [],
-            )
-          } else {
-            (
-              num: text(style: "italic")[
-                #numbering(heading-to-show.numbering, ..chapter-num)
-              ],
-              divider: box(line(length: 10em, angle: 90deg, stroke: 0.8pt)),
-              heading: text(style: "italic")[#heading-to-show.body],
-            )
-          }
-
-          let page-num = counter(page).get().first()
-          if calc.odd(page-num) {
-            marginalia.wideblock(align(right, [
-              #formatted.heading
-              #h(1em)
-              #formatted.divider
-              #h(1em)
-              #box(width: 1cm)[#align(right.inv())[#formatted.num]]
-            ]))
-          } else {
-            marginalia.wideblock(align(left, [
-              #box(width: 1cm)[#align(left.inv())[#formatted.num]]
-              #h(1em)
-              #formatted.divider
-              #h(1em)
-              #formatted.heading
-            ]))
-          }
-        }
-      },
-      footer: context {
-        let page-num = counter(page).get().first()
-        marginalia.wideblock(align(center)[#page-num])
-      },
-    )
-
-    // Remove the separator from the footnote.entry rule, because it
-    // is hard to get the starting point of the separator line right,
-    // given there is a margin.
-    set footnote.entry(separator: none)
-
-    // Forces the footnote text to span the text block + margin width
-    // and forces the entry body to appear like an enumerated list entry
-    show footnote.entry: it => context {
-      let loc = it.note.location()
-      let num = counter(footnote).at(loc).first()
-      let enum-like-entry = enum(
-        numbering: "1",
-        body-indent: 1em,
-        enum.item(num)[#it.note.body],
-      )
-      marginalia.wideblock(enum-like-entry)
-    }
-
-    show heading.where(level: 1): it => {
-      pagebreak(weak: true)
-      counter(footnote).update(0)
-      marginalia.notecounter.update(0)
-
-      let page-num = counter(page).get().first()
-      if it.numbering == none {
-        text(size: 1.5em)[#it.body]
-      } else {
-        let formatted = (
-          heading: text(size: 1.5em)[#it.body],
-          num: text(size: 3em)[
-            #numbering(it.numbering, counter(heading).at(it.location()).first())
-          ],
-        )
-        if calc.odd(page-num) {
-          let chapter-header = align(right)[
-            #box(width: page.width - margin-note-metrics.width * 2)[
-              #set par(justify: false)
-              #formatted.heading
-            ]
-            #h(1em)
-            #box(width: margin-note-metrics.width)[
-              #align(right.inv())[#h(1em)#formatted.num]
-            ]
-          ]
-          marginalia.wideblock([
-            #place(
-              top + right,
-              dx: -margin-note-metrics.width - margin-note-metrics.sep / 2,
-              dy: measure(chapter-header).height,
-              line(
-                // A sufficiently long line, extending above the page top
-                length: page.height,
-                angle: 270deg,
-              ),
-            )
-            #chapter-header
-            #v(1em)
-          ])
-        } else {
-          let chapter-header = align(left)[
-            #box(width: margin-note-metrics.width)[
-              #align(left.inv())[#formatted.num#h(1em)]
-            ]
-            #h(1em)
-            #box(width: page.width - margin-note-metrics.width * 2)[
-              #set par(justify: false)
-              #formatted.heading
-            ]
-          ]
-          marginalia.wideblock([
-            #place(
-              top + left,
-              dx: margin-note-metrics.width + margin-note-metrics.sep / 2,
-              dy: measure(chapter-header).height,
-              line(
-                // A sufficiently long line, extending above the page top
-                length: page.height,
-                angle: 270deg,
-              ),
-            )
-            #chapter-header
-            #v(1em)
-          ])
-        }
-      }
-
-      // Inject the mini-TOC right below the chapter heading
-      if show-chapter-outline {
-        marginalia.note(
-          numbering: none,
-          box(
-            width: note-width,
-            text(style: "italic")[
-              #suboutline(depth: 1)
-            ],
-          ),
-        )
-      }
-
-      // Necessary to prevent the gap, which has the height equal to the
-      // mini-TOC, between the chapter heading and the chapter text.
-      v(0pt, weak: true)
-    }
-
-    show heading.where(level: 2): it => {
-      v(1em)
-      it // Render the title
-      v(1em)
-    }
-
-    body // This is the main body
-
-    if appendices.len() != 0 {
-      counter(heading).update(0)
-      odd-pagebreak()
-
-      {
-        // Invisble in document, but still in the outline.
-        show heading: none
-        heading(level: 1, numbering: none)[Appendix]
-      }
-
-      set heading(numbering: "I.1")
-
-      show heading.where(level: 1): it => {
-        text(size: 1em)[#it]
-        v(1em)
-      }
-
-      for appendix in appendices {
-        appendix
-      }
-    }
-  } // Scoped
-
-  // ------------------------------- BACKMATTER --------------------------------
-  {
-    counter(heading).update(0)
-    set par(justify: true)
-    set heading(numbering: none)
-    set page(numbering: "1")
-
-    // Disable margin notes
-    show: marginalia.setup.with(
-      outer: (width: 0pt, sep: 0pt, far: 2.5cm),
-    )
-
-    if show-index {
-      odd-pagebreak()
-      show heading.where(level: 1): it => {
-        text(size: 1.5em)[#emph[#it]]
-      }
-      [= Index]
-      v(1em)
-      columns(2)[#make-index(use-page-counter: true)]
-    }
-  } // Scoped BACKMATTER
+  let opts = (
+    title: title,
+    subtitle: subtitle,
+    title-head: title-head,
+    author: author,
+    publisher: publisher,
+    versioning: versioning,
+    paper-size: paper-size,
+    copyright-page: copyright-page,
+    opening-page: opening-page,
+    dedication-page: dedication-page,
+    foreword: foreword,
+    preface: preface,
+    show-table-of-contents: show-table-of-contents,
+    show-list-of-figures: show-list-of-figures,
+    show-list-of-tables: show-list-of-tables,
+    show-chapter-outline: show-chapter-outline,
+    appendices: appendices,
+    show-index: show-index,
+    margin-note-metrics: margin-note-metrics,
+  )
+  setup-impl(opts, body)
 }

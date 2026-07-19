@@ -1,0 +1,388 @@
+// Copyright 2026 Leedehai.
+// Use of this code is governed by a MIT license in the LICENSE.txt file.
+// Repository: https://github.com/Leedehai/typst-flow-book
+
+#import "@preview/marginalia:0.3.1" as marginalia
+#import "@preview/in-dexter:0.7.2": make-index
+
+#let chapter-suboutline(
+  chapter-heading,
+  depth: none,
+) = {
+  set outline.entry(fill: repeat([.], gap: 0.15em))
+
+  context {
+    let headings-after = query(
+      selector(heading.where(outlined: true)).after(
+        chapter-heading.location(),
+        inclusive: false,
+      ),
+    )
+    let last-sub-heading = headings-after
+      .slice(0, headings-after.position(h => h.level <= chapter-heading.level))
+      .at(-1, default: none)
+    // This chapter has no sub headings at all; no "last one" to speak of.
+    if last-sub-heading == none { return }
+
+    outline(
+      // Must be 'none' to prevent error "pagebreak not allowed inside of
+      // containers". Explanation of error: we have a show rule that inserts
+      // a pagebreak before every heading, and this outline() function is
+      // called within that show rule. A non-none title will also results in
+      // in a heading for this outline block, and hence with that show rule
+      // Typst will try inserting a pagebreak before this outline heading,
+      // inside the outer heading's layout container. It doesn't make sense
+      // and thus forbidden.
+      title: none,
+      target: selector(heading.where(outlined: true))
+        .after(
+          chapter-heading.location(),
+          inclusive: false,
+        )
+        .before(last-sub-heading.location()),
+      depth: if depth == none { none } else { chapter-heading.level + depth },
+    )
+  }
+}
+
+
+#let setup-impl(opts, body) = {
+  // --- HELPER FUNCTION ---
+  // Forces the next content to start on an odd-numbered (right-hand) page
+  let odd-pagebreak() = {
+    pagebreak(to: "odd", weak: true)
+  }
+
+  // --------------------------------- GLOBAL ----------------------------------
+  set page(paper: opts.paper-size)
+  set super(size: 0.8em)
+
+  // ------------------------------- FRONTMATTER -------------------------------
+  {
+    odd-pagebreak()
+    // Cover page
+    [
+      #if opts.title-head != none {
+        opts.title-head
+      }
+      #if opts.versioning != none {
+        h(1fr)
+        let version = if opts.versioning.at("version", default: none) != none {
+          opts.versioning.version
+        }
+        let date = if opts.versioning.at("build-date", default: none) != none {
+          datetime.today().display(opts.versioning.build-date)
+        }
+        (version, date).join(h(1em))
+      }
+      #align(center)[
+        #v(1fr)
+        #text(size: 28pt, weight: "bold")[#opts.title] \
+        #v(1em)
+        #text(size: 21pt)[#opts.subtitle] \
+        #v(2fr)
+        #text(size: 21pt)[#opts.author]
+        #v(1em)
+        #text(size: 16pt)[#opts.publisher]
+        #v(1em)
+      ]
+    ]
+
+    if opts.copyright-page != none {
+      pagebreak(weak: true)
+      opts.copyright-page
+    }
+
+    if opts.opening-page != none {
+      odd-pagebreak()
+      opts.opening-page
+    }
+
+    if opts.dedication-page != none {
+      odd-pagebreak()
+      opts.dedication-page
+    }
+
+    if opts.foreword != none {
+      odd-pagebreak()
+      set page(numbering: "i")
+      counter(heading).update(0)
+      heading(level: 1, numbering: none)[Foreword]
+      opts.foreword
+    }
+
+    if opts.preface != none {
+      odd-pagebreak()
+      set page(numbering: "i")
+      counter(heading).update(0)
+      heading(level: 1, numbering: none)[Preface]
+      opts.preface
+    }
+
+    if opts.show-table-of-contents {
+      odd-pagebreak()
+      outline(title: [Table of Contents], indent: auto)
+    }
+
+    if opts.show-list-of-figures {
+      odd-pagebreak()
+      outline(title: [List of Figures], target: figure.where(kind: image))
+    }
+
+    if opts.show-list-of-tables {
+      odd-pagebreak()
+      outline(title: [List of Tables], target: figure.where(kind: table))
+    }
+  } // Scoped
+
+  // ------------------------ BODY (MAIN AND APPENDICES) -----------------------
+  {
+    odd-pagebreak()
+    counter(heading).update(0)
+
+    set par(justify: true)
+    set heading(numbering: "1.1")
+
+    // Configure marginalia layout (side notes)
+    let note-width = opts.margin-note-metrics.width
+    let note-sep = opts.margin-note-metrics.sep
+    let breakout-width = note-width + note-sep
+    show: marginalia.setup.with(
+      outer: (width: note-width, sep: note-sep, far: 2cm),
+      book: true, // Alternates margins per page
+    )
+
+    set page(
+      numbering: "1",
+      number-align: center + top,
+      header: context {
+        let current-page = here().page()
+
+        let heading-to-show = none
+        let page-has-level-1 = false
+        // 1. Look for a level-1 heading starting on this EXACT page
+        let headings-on-page = query(heading.where(level: 1)).filter(
+          h => h.location().page() == current-page,
+        )
+        if headings-on-page.len() > 0 {
+          heading-to-show = headings-on-page.first()
+          page-has-level-1 = true
+        } else {
+          // 2. Look for a level-2 heading starting on this EXACT page
+          let headings-on-page = query(heading.where(level: 2)).filter(
+            h => h.location().page() == current-page,
+          )
+          if headings-on-page.len() > 0 {
+            heading-to-show = headings-on-page.first()
+          } else {
+            // 3. Fall back to the last level-1 or level-2 heading in past pages
+            let past-headings = query(heading.where(level: 1).or(heading.where(level: 2)).before(here()))
+            if past-headings != () {
+              heading-to-show = past-headings.last()
+            }
+          }
+        }
+
+        // If there's a heading to show, take its number and construct the layout
+        if heading-to-show != none {
+          let chapter-num = counter(heading).at(heading-to-show.location())
+          let formatted = if heading-to-show.level == 1 and page-has-level-1 {
+            (
+              num: [],
+              divider: [],
+              heading: [],
+            )
+          } else {
+            (
+              num: text(style: "italic")[
+                #numbering(heading-to-show.numbering, ..chapter-num)
+              ],
+              divider: box(line(length: 10em, angle: 90deg, stroke: 0.8pt)),
+              heading: text(style: "italic")[#heading-to-show.body],
+            )
+          }
+
+          let page-num = counter(page).get().first()
+          if calc.odd(page-num) {
+            marginalia.wideblock(align(right, [
+              #formatted.heading
+              #h(1em)
+              #formatted.divider
+              #h(1em)
+              #box(width: 1cm)[#align(right.inv())[#formatted.num]]
+            ]))
+          } else {
+            marginalia.wideblock(align(left, [
+              #box(width: 1cm)[#align(left.inv())[#formatted.num]]
+              #h(1em)
+              #formatted.divider
+              #h(1em)
+              #formatted.heading
+            ]))
+          }
+        }
+      },
+      footer: context {
+        let page-num = counter(page).get().first()
+        marginalia.wideblock(align(center)[#page-num])
+      },
+    )
+
+    // Remove the separator from the footnote.entry rule, because it
+    // is hard to get the starting point of the separator line right,
+    // given there is a margin.
+    set footnote.entry(separator: none)
+
+    // Forces the footnote text to span the text block + margin width
+    // and forces the entry body to appear like an enumerated list entry
+    show footnote.entry: it => context {
+      let loc = it.note.location()
+      let num = counter(footnote).at(loc).first()
+      let enum-like-entry = enum(
+        numbering: "1",
+        body-indent: 1em,
+        enum.item(num)[#it.note.body],
+      )
+      marginalia.wideblock(enum-like-entry)
+    }
+
+    show heading.where(level: 1): it => {
+      pagebreak(weak: true)
+      counter(footnote).update(0)
+      marginalia.notecounter.update(0)
+
+      let page-num = counter(page).get().first()
+      if it.numbering == none {
+        text(size: 1.5em)[#it.body]
+      } else {
+        let formatted = (
+          heading: text(size: 1.5em)[#it.body],
+          num: text(size: 3em)[
+            #numbering(it.numbering, counter(heading).at(it.location()).first())
+          ],
+        )
+        if calc.odd(page-num) {
+          let chapter-header = align(right)[
+            #box(width: page.width - opts.margin-note-metrics.width * 2)[
+              #set par(justify: false)
+              #formatted.heading
+            ]
+            #h(1em)
+            #box(width: opts.margin-note-metrics.width)[
+              #align(right.inv())[#h(1em)#formatted.num]
+            ]
+          ]
+          marginalia.wideblock([
+            #place(
+              top + right,
+              dx: -opts.margin-note-metrics.width - opts.margin-note-metrics.sep / 2,
+              dy: measure(chapter-header).height,
+              line(
+                // A sufficiently long line, extending above the page top
+                length: page.height,
+                angle: 270deg,
+              ),
+            )
+            #chapter-header
+            #v(1em)
+          ])
+        } else {
+          let chapter-header = align(left)[
+            #box(width: opts.margin-note-metrics.width)[
+              #align(left.inv())[#formatted.num#h(1em)]
+            ]
+            #h(1em)
+            #box(width: page.width - opts.margin-note-metrics.width * 2)[
+              #set par(justify: false)
+              #formatted.heading
+            ]
+          ]
+          marginalia.wideblock([
+            #place(
+              top + left,
+              dx: opts.margin-note-metrics.width + opts.margin-note-metrics.sep / 2,
+              dy: measure(chapter-header).height,
+              line(
+                // A sufficiently long line, extending above the page top
+                length: page.height,
+                angle: 270deg,
+              ),
+            )
+            #chapter-header
+            #v(1em)
+          ])
+        }
+      }
+
+      // Inject the mini-TOC right below the chapter heading
+      if opts.show-chapter-outline {
+        marginalia.note(
+          numbering: none,
+          box(
+            width: note-width,
+            text(style: "italic")[
+              #chapter-suboutline(it, depth: 1)
+            ],
+          ),
+        )
+      }
+
+      // Necessary to prevent the gap, which has the height equal to the
+      // mini-TOC, between the chapter heading and the chapter text.
+      v(0pt, weak: true)
+    }
+
+    show heading.where(level: 2): it => {
+      v(1em)
+      it // Render the title
+      v(1em)
+    }
+
+    body // This is the main body
+
+    if opts.appendices.len() != 0 {
+      counter(heading).update(0)
+      odd-pagebreak()
+
+      {
+        // Invisble in document, but still in the outline.
+        show heading: none
+        heading(level: 1, numbering: none)[Appendix]
+      }
+
+      set heading(numbering: "I.1")
+
+      show heading.where(level: 1): it => {
+        text(size: 1em)[#it]
+        v(1em)
+      }
+
+      for appendix in opts.appendices {
+        appendix
+      }
+    }
+  } // Scoped
+
+  // ------------------------------- BACKMATTER --------------------------------
+  {
+    counter(heading).update(0)
+    set par(justify: true)
+    set heading(numbering: none)
+    set page(numbering: "1")
+
+    // Disable margin notes
+    show: marginalia.setup.with(
+      outer: (width: 0pt, sep: 0pt, far: 2.5cm),
+    )
+
+    if opts.show-index {
+      odd-pagebreak()
+      show heading.where(level: 1): it => {
+        text(size: 1.5em)[#emph[#it]]
+      }
+      [= Index]
+      v(1em)
+      columns(2)[#make-index(use-page-counter: true)]
+    }
+  } // Scoped BACKMATTER
+}
