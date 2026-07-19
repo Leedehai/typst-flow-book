@@ -52,6 +52,26 @@
 /// ```
 #let index = in-dexter.index
 
+/// The default i10n mapping dictionary. To override some of them,
+/// use:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #show book.setup.with(
+///  ...
+///  i10n-texts: book.default-i10-texts + (table-of-contents: "目录")
+/// )
+/// ```
+#let default-i10-texts = (
+  forward: "Forward",
+  preface: "Preface",
+  table-of-contents: "Table of Contents",
+  list-of-figures: "List of Figures",
+  list-of-tables: "List of Tables",
+  appendix-title-in-outline: "Appendix",
+  appendix-abbreviated-heading-prefix: "App.",
+  blank-page-message: "This page has been intentionally left blank.",
+)
+
 /// The setup. Usage:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
@@ -79,6 +99,7 @@
   appendices: (appendix-title-page: none, chapters: ()),
   show-index: false,
   margin-note-metrics: (width: 5.2cm, sep: 1em),
+  i10n-texts: default-i10-texts,
   body,
 ) = {
   let opts = (
@@ -101,6 +122,7 @@
     appendices: appendices,
     show-index: show-index,
     margin-note-metrics: margin-note-metrics,
+    i10n-texts: i10n-texts,
   )
   setup-impl(opts, body)
 }

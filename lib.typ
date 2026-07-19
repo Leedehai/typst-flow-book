@@ -48,12 +48,13 @@
 #let is-chapter-appendix = state("is-chapter-appendix", false)
 
 // Add page header, for pages that contain a chapter (i.e. level-1) heading
-#let chapter-header(it, margin-note-metrics) = {
+#let chapter-header(it, margin-note-metrics, i10n-text) = {
   let formatted = (
     heading: text(size: 1.5em)[#it.body],
     num: if is-chapter-appendix.get() {
       text(size: 1.5em)[
-        App. #numbering(it.numbering, counter(heading).at(it.location()).first())
+        #i10n-text.appendix-abbreviated-heading-prefix
+        #numbering(it.numbering, counter(heading).at(it.location()).first())
       ]
     } else {
       text(size: 3em)[
@@ -193,21 +194,23 @@
   }
 }
 
-
+// The template.
 #let setup-impl(opts, body) = {
   // --------------------------------- GLOBAL ----------------------------------
   set page(paper: opts.paper-size)
   set super(size: 0.8em)
 
   let odd-pagebreak() = {
-    pagebreak(to: "odd", weak: true)
+    {
+      show pagebreak.where(to: "odd", weak: true): set page(
+        background: align(
+          center + horizon,
+          text(style: "italic")[#opts.i10n-texts.blank-page-message],
+        ),
+      )
+      pagebreak(to: "odd", weak: true)
+    } // Scoped
   }
-  show pagebreak.where(to: "odd", weak: true): set page(
-    background: align(
-      center + horizon,
-      text(style: "italic")[This page has been intentionally left blank.],
-    ),
-  )
 
   // ------------------------------- FRONTMATTER -------------------------------
   {
@@ -265,7 +268,7 @@
       odd-pagebreak()
       set page(numbering: "i")
       counter(heading).update(0)
-      heading(level: 1, numbering: none)[Foreword]
+      heading(level: 1, numbering: none)[#opts.i10n-texts.forward]
       opts.foreword
     }
 
@@ -273,23 +276,29 @@
       odd-pagebreak()
       set page(numbering: "i")
       counter(heading).update(0)
-      heading(level: 1, numbering: none)[Preface]
+      heading(level: 1, numbering: none)[#opts.i10n-texts.preface]
       opts.preface
     }
 
     if opts.show-table-of-contents {
       odd-pagebreak()
-      outline(title: [Table of Contents], indent: auto)
+      outline(title: [#opts.i10n-texts.table-of-contents], indent: auto)
     }
 
     if opts.show-list-of-figures {
       odd-pagebreak()
-      outline(title: [List of Figures], target: figure.where(kind: image))
+      outline(
+        title: [#opts.i10n-texts.list-of-figures],
+        target: figure.where(kind: image),
+      )
     }
 
     if opts.show-list-of-tables {
       odd-pagebreak()
-      outline(title: [List of Tables], target: figure.where(kind: table))
+      outline(
+        title: [#opts.i10n-texts.list-of-tables],
+        target: figure.where(kind: table),
+      )
     }
   } // Scoped
 
@@ -351,7 +360,7 @@
       if it.numbering == none {
         text(size: 1.5em)[#it.body]
       } else {
-        chapter-header(it, opts.margin-note-metrics)
+        chapter-header(it, opts.margin-note-metrics, opts.i10n-texts)
       }
 
       // Inject the mini-TOC right below the chapter heading
@@ -382,17 +391,16 @@
       counter(heading).update(0)
       odd-pagebreak()
 
-      // Invisble in document, but still in the outline.
       {
-        show heading: none
-        heading(level: 1, numbering: none)[Appendix]
+        show heading: none // Invisble in document, but still in the outline.
+        heading(numbering: none)[#opts.i10n-texts.appendix-title-in-outline]
         if opts.appendices.title-page != none {
           set page(header: none)
           opts.appendices.title-page
           set page(footer: none)
           odd-pagebreak()
         }
-      }
+      } // Scoped
 
       set heading(numbering: "I.1")
       is-chapter-appendix.update(true)
