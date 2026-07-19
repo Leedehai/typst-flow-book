@@ -191,16 +191,21 @@
   }
 }
 
-#let setup-impl(opts, body) = {
-  // --- HELPER FUNCTION ---
-  // Forces the next content to start on an odd-numbered (right-hand) page
-  let odd-pagebreak() = {
-    pagebreak(to: "odd", weak: true)
-  }
 
+#let setup-impl(opts, body) = {
   // --------------------------------- GLOBAL ----------------------------------
   set page(paper: opts.paper-size)
   set super(size: 0.8em)
+
+  let odd-pagebreak() = {
+    pagebreak(to: "odd", weak: true)
+  }
+  show pagebreak.where(to: "odd", weak: true): set page(
+    background: align(
+      center + horizon,
+      text(style: "italic")[This page has been intentionally left blank.],
+    ),
+  )
 
   // ------------------------------- FRONTMATTER -------------------------------
   {
