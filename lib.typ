@@ -209,21 +209,21 @@
 
           let page-num = counter(page).get().first()
           if calc.odd(page-num) {
-            marginalia.wideblock(align(right, [
+            marginalia.wideblock(align(right)[
               #formatted.heading
               #h(1em)
               #formatted.divider
               #h(1em)
               #box(width: 1cm)[#align(right.inv())[#formatted.num]]
-            ]))
+            ])
           } else {
-            marginalia.wideblock(align(left, [
+            marginalia.wideblock(align(left)[
               #box(width: 1cm)[#align(left.inv())[#formatted.num]]
               #h(1em)
               #formatted.divider
               #h(1em)
               #formatted.heading
-            ]))
+            ])
           }
         }
       },

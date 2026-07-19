@@ -1,5 +1,6 @@
 .DS_Store
 .vscode
 *.pdf
+!example-ref.pdf
 *.py[co]
 temp
