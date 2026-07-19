@@ -378,14 +378,20 @@
 
     body // This is the main body
 
-    if opts.appendices.len() != 0 {
+    if opts.appendices.chapters.len() != 0 {
       counter(heading).update(0)
       odd-pagebreak()
 
+      // Invisble in document, but still in the outline.
       {
-        // Invisble in document, but still in the outline.
         show heading: none
         heading(level: 1, numbering: none)[Appendix]
+        if opts.appendices.title-page != none {
+          set page(header: none)
+          opts.appendices.title-page
+          set page(footer: none)
+          odd-pagebreak()
+        }
       }
 
       set heading(numbering: "I.1")
@@ -396,7 +402,7 @@
         v(1em)
       }
 
-      for appendix in opts.appendices {
+      for appendix in opts.appendices.chapters {
         appendix
       }
     }

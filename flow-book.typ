@@ -76,7 +76,7 @@
   show-list-of-figures: false,
   show-list-of-tables: false,
   show-chapter-outline: true,
-  appendices: [],
+  appendices: (appendix-title-page: none, chapters: ()),
   show-index: false,
   margin-note-metrics: (width: 5.2cm, sep: 1em),
   body,

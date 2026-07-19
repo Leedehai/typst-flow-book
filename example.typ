@@ -15,24 +15,20 @@
   publisher: "The Typst Community",
   versioning: (build-date: "[year]-[month]-[day]", version: "v0.1.0"),
   paper-size: "us-letter",
-  copyright-page: [
-    #align(bottom)[
-      © 2026 Leedehai.
-    ]
+  copyright-page: [#align(bottom)[© 2026 Leedehai.]
   ],
-  dedication-page: [
-    #include "example-dedication.typ"
-  ],
-  preface: [
-    #lorem(200)
-  ],
+  dedication-page: [#include "example-dedication.typ"],
+  preface: [#lorem(200)],
   show-table-of-contents: true,
   appendices: (
-    [#include "example-appendix.typ"],
-    [
-      = Another added article
-      #lorem(500)
-    ],
+    title-page: [#align(left + horizon, text(size: 3em)[Appendix])],
+    chapters: (
+      [#include "example-appendix.typ"],
+      [
+        = Another added article
+        #lorem(500)
+      ],
+    ),
   ),
   show-index: true,
 )
