@@ -4,13 +4,15 @@
 //
 // Usage:
 // ```
-// #show flow-book.with(title: "My Awesome Book", ...)
+// #import "flow-book.typ" as book
+//
+// #show: book.setup.with(title: "My Awesome Book", ...)
 //
 // Your content here.
 // ```
 
 #import "@preview/marginalia:0.3.1" as marginalia
-#import "@preview/in-dexter:0.7.2": index
+#import "@preview/in-dexter:0.7.2" as in-dexter
 
 #import "lib.typ": setup-impl
 
@@ -48,7 +50,7 @@
 /// This is a _laptop computer_#book.index("computer!laptop"), and
 /// this is a desktop computer#book.index("computer!desktop").
 /// ```
-#let index = index
+#let index = in-dexter.index
 
 /// The setup. Usage:
 /// ```

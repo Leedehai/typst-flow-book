@@ -45,13 +45,21 @@
   }
 }
 
+#let is-chapter-appendix = state("is-chapter-appendix", false)
+
 // Add page header, for pages that contain a chapter (i.e. level-1) heading
 #let chapter-header(it, margin-note-metrics) = {
   let formatted = (
     heading: text(size: 1.5em)[#it.body],
-    num: text(size: 3em)[
-      #numbering(it.numbering, counter(heading).at(it.location()).first())
-    ],
+    num: if is-chapter-appendix.get() {
+      text(size: 1.5em)[
+        App. #numbering(it.numbering, counter(heading).at(it.location()).first())
+      ]
+    } else {
+      text(size: 3em)[
+        #numbering(it.numbering, counter(heading).at(it.location()).first())
+      ]
+    },
   )
   let divider = line(
     // A sufficiently long line, extending above the page top
@@ -67,7 +75,7 @@
       ]
       #h(1em)
       #box(width: margin-note-metrics.width)[
-        #align(right.inv())[#h(1em)#formatted.num]
+        #align(right.inv())[#h(0.5em)#formatted.num]
       ]
     ]
     marginalia.wideblock([
@@ -83,7 +91,7 @@
   } else {
     let chapter-header = align(left)[
       #box(width: margin-note-metrics.width)[
-        #align(left.inv())[#formatted.num#h(1em)]
+        #align(left.inv())[#formatted.num#h(0.5em)]
       ]
       #h(1em)
       #box(width: page.width - margin-note-metrics.width * 2)[
@@ -373,6 +381,7 @@
       }
 
       set heading(numbering: "I.1")
+      is-chapter-appendix.update(true)
 
       show heading.where(level: 1): it => {
         text(size: 1em)[#it]
