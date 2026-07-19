@@ -1,5 +1,8 @@
 #import "flow-book.typ" as book
 
+// Remove the timestamp to ensure reproducible builds of the PDF.
+#set document(date: none)
+
 #set text(font: "Palatino")
 #show math.equation: set text(font: "STIX Two Math")
 #show raw.where(block: false): set text(fill: fuchsia)

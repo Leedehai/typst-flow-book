@@ -45,7 +45,6 @@
   }
 }
 
-
 #let setup-impl(opts, body) = {
   // --- HELPER FUNCTION ---
   // Forces the next content to start on an odd-numbered (right-hand) page
@@ -101,6 +100,12 @@
     if opts.dedication-page != none {
       odd-pagebreak()
       opts.dedication-page
+    }
+
+    show heading.where(level: 1): it => {
+      counter(footnote).update(0)
+      text(size: 1.5em)[#it.body]
+      v(1em)
     }
 
     if opts.foreword != none {
@@ -370,11 +375,6 @@
     set heading(numbering: none)
     set page(numbering: "1")
 
-    // Disable margin notes
-    show: marginalia.setup.with(
-      outer: (width: 0pt, sep: 0pt, far: 2.5cm),
-    )
-
     if opts.show-index {
       odd-pagebreak()
       show heading.where(level: 1): it => {
@@ -384,5 +384,5 @@
       v(1em)
       columns(2)[#make-index(use-page-counter: true)]
     }
-  } // Scoped BACKMATTER
+  } // Scoped
 }
