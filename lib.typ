@@ -66,7 +66,8 @@
     length: page.height,
     angle: 270deg,
   )
-  let page-num = counter(page).get().first()
+  // Absolute count, not using the resettable counter(page)
+  let page-num = here().page()
   if calc.odd(page-num) {
     let chapter-header = align(right)[
       #box(width: page.width - margin-note-metrics.width * 2)[
@@ -171,7 +172,8 @@
     heading: text(style: "italic")[#heading-of-page.body],
   )
 
-  let page-num = counter(page).get().first()
+  // Absolute count, not using the resettable counter(page)
+  let page-num = here().page()
   if calc.odd(page-num) {
     marginalia.wideblock(align(right)[
       #formatted.heading
@@ -317,7 +319,8 @@
         page-header(current-page)
       },
       footer: context {
-        let page-num = counter(page).get().first()
+        // Absolute count, not using the resettable counter(page)
+        let page-num = here().page()
         marginalia.wideblock(align(center)[#page-num])
       },
     )
