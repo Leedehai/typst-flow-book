@@ -77,7 +77,7 @@
   show-chapter-outline: true,
   appendices: [],
   show-index: false,
-  margin-note-width: 5.2cm,
+  margin-note-metrics: (width: 5.2cm, sep: 1em),
   body,
 ) = {
   // --- HELPER FUNCTION ---
@@ -177,8 +177,8 @@
     set heading(numbering: "1.1")
 
     // Configure marginalia layout (side notes)
-    let note-width = margin-note-width
-    let note-sep = 1em
+    let note-width = margin-note-metrics.width
+    let note-sep = margin-note-metrics.sep
     let breakout-width = note-width + note-sep
     show: marginalia.setup.with(
       outer: (width: note-width, sep: note-sep, far: 2cm),
@@ -296,22 +296,23 @@
         )
         if calc.odd(page-num) {
           let chapter-header = align(right)[
-            #box(width: page.width - margin-note-width * 2)[
+            #box(width: page.width - margin-note-metrics.width * 2)[
               #set par(justify: false)
               #formatted.heading
             ]
             #h(1em)
-            #box(width: margin-note-width)[
+            #box(width: margin-note-metrics.width)[
               #align(right.inv())[#h(1em)#formatted.num]
             ]
           ]
           marginalia.wideblock([
             #place(
               top + right,
-              dx: -margin-note-width,
+              dx: -margin-note-metrics.width - margin-note-metrics.sep / 2,
               dy: measure(chapter-header).height,
               line(
-                length: 10em,
+                // A sufficiently long line, extending above the page top
+                length: page.height,
                 angle: 270deg,
               ),
             )
@@ -320,11 +321,11 @@
           ])
         } else {
           let chapter-header = align(left)[
-            #box(width: margin-note-width)[
+            #box(width: margin-note-metrics.width)[
               #align(left.inv())[#formatted.num#h(1em)]
             ]
             #h(1em)
-            #box(width: page.width - margin-note-width * 2)[
+            #box(width: page.width - margin-note-metrics.width * 2)[
               #set par(justify: false)
               #formatted.heading
             ]
@@ -332,10 +333,11 @@
           marginalia.wideblock([
             #place(
               top + left,
-              dx: margin-note-width,
+              dx: margin-note-metrics.width + margin-note-metrics.sep / 2,
               dy: measure(chapter-header).height,
               line(
-                length: 10em,
+                // A sufficiently long line, extending above the page top
+                length: page.height,
                 angle: 270deg,
               ),
             )
@@ -345,11 +347,11 @@
         }
       }
 
-      // Inject the mini-TOC right below it
+      // Inject the mini-TOC right below the chapter heading
       if show-chapter-outline {
         marginalia.note(
           numbering: none,
-          block(
+          box(
             width: note-width,
             text(style: "italic")[
               #suboutline(depth: 1)
@@ -358,7 +360,9 @@
         )
       }
 
-      v(1em)
+      // Necessary to prevent the gap, which has the height equal to the
+      // mini-TOC, between the chapter heading and the chapter text.
+      v(0pt, weak: true)
     }
 
     show heading.where(level: 2): it => {
@@ -397,6 +401,7 @@
     counter(heading).update(0)
     set par(justify: true)
     set heading(numbering: none)
+    set page(numbering: "1")
 
     // Disable margin notes
     show: marginalia.setup.with(
