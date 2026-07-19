@@ -1,0 +1,15 @@
+[package]
+name = "flow-book"
+version = "0.1.0"
+entrypoint = "flow-book.typ"
+authors = ["Leedehai"]
+license = "MIT"
+description = "A book template, without side notes and more"
+repository = "https://github.com/Leedehai/typst-flow-book"
+keywords = ["thesis", "report", "book", "sidenotes"]
+categories = ["thesis", "report", "book"]
+
+[template]
+path = "template"
+entrypoint = "flow-book.typ"
+thumbnail = "thumbnail.png"

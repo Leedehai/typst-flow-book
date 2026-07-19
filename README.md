@@ -1,4 +1,4 @@
-# The Flow-Book theme for Typst
+# The Flow-Book Template for Typst
 
 See [example.typ](example.typ) for usage.
 
