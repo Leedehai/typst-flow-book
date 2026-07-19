@@ -395,11 +395,17 @@
     if opts.show-index {
       odd-pagebreak()
       show heading.where(level: 1): it => {
-        text(size: 1.5em)[#emph[#it]]
+        text(size: 1.5em)[#it]
       }
       [= Index]
       v(1em)
-      columns(2)[#make-index(use-page-counter: true)]
+      // This font is embedded in Typst.
+      set text(font: "DejaVu Sans Mono", size: 0.9em)
+      columns(2)[#make-index(
+        use-page-counter: true, // Use page counter, not absolute page number.
+        use-bang-grouping: true, // LaTeX bang grouping syntax.
+        entry-casing: it => it, // Don't capitalize the first letter.
+      )]
     }
   } // Scoped
 }

@@ -9,3 +9,7 @@
 == Another added subsection
 
 #lorem(200)#footnote[This is a footnote.]
+
+== More
+
+#lorem(200)

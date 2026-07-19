@@ -11,7 +11,6 @@
 
 #import "@preview/marginalia:0.3.1" as marginalia
 #import "@preview/in-dexter:0.7.2": index
-#import "@preview/hydra:0.6.3": hydra
 
 #import "lib.typ": setup-impl
 
@@ -42,14 +41,14 @@
 /// ```
 #let wideblock = marginalia.wideblock
 
-/// Put an indexed term. Usage:
+/// Add a index. Usage:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
-/// This is called #book.indexed[Computation Offloading].
+/// This is called a dog#book.index[dog].
+/// This is a _laptop computer_#book.index("computer!laptop"), and
+/// this is a desktop computer#book.index("computer!desktop").
 /// ```
-#let indexed(term) = {
-  term + index(term)
-}
+#let index = index
 
 /// The setup. Usage:
 /// ```
