@@ -45,6 +45,144 @@
   }
 }
 
+// Add page header, for pages that contain a chapter (i.e. level-1) heading
+#let chapter-header(it, margin-note-metrics) = {
+  let formatted = (
+    heading: text(size: 1.5em)[#it.body],
+    num: text(size: 3em)[
+      #numbering(it.numbering, counter(heading).at(it.location()).first())
+    ],
+  )
+  let divider = line(
+    // A sufficiently long line, extending above the page top
+    length: page.height,
+    angle: 270deg,
+  )
+  let page-num = counter(page).get().first()
+  if calc.odd(page-num) {
+    let chapter-header = align(right)[
+      #box(width: page.width - margin-note-metrics.width * 2)[
+        #set par(justify: false)
+        #formatted.heading
+      ]
+      #h(1em)
+      #box(width: margin-note-metrics.width)[
+        #align(right.inv())[#h(1em)#formatted.num]
+      ]
+    ]
+    marginalia.wideblock([
+      #place(
+        top + right,
+        dx: -margin-note-metrics.width - margin-note-metrics.sep / 2,
+        dy: measure(chapter-header).height,
+        divider,
+      )
+      #chapter-header
+      #v(1em)
+    ])
+  } else {
+    let chapter-header = align(left)[
+      #box(width: margin-note-metrics.width)[
+        #align(left.inv())[#formatted.num#h(1em)]
+      ]
+      #h(1em)
+      #box(width: page.width - margin-note-metrics.width * 2)[
+        #set par(justify: false)
+        #formatted.heading
+      ]
+    ]
+    marginalia.wideblock([
+      #place(
+        top + left,
+        dx: margin-note-metrics.width + margin-note-metrics.sep / 2,
+        dy: measure(chapter-header).height,
+        divider,
+      )
+      #chapter-header
+      #v(1em)
+    ])
+  }
+}
+
+// Find the level-1 or level-2 heading that "owns" this page.
+// If there's such a heading on this exact page, then this is the heading.
+// Otherwise, the heading is found by looking at previous pages.
+#let find-heading(current-page) = {
+  // 1. Look for a level-1 heading starting on this EXACT page
+  let headings-on-page = query(heading.where(level: 1)).filter(
+    h => h.location().page() == current-page,
+  )
+  if headings-on-page.len() > 0 {
+    return (
+      heading-of-page: headings-on-page.first(),
+      heading-on-this-page: true,
+    )
+  }
+
+  // 2. Look for a level-2 heading starting on this EXACT page
+  let headings-on-page = query(heading.where(level: 2)).filter(
+    h => h.location().page() == current-page,
+  )
+  if headings-on-page.len() > 0 {
+    return (
+      heading-of-page: headings-on-page.first(),
+      heading-on-this-page: true,
+    )
+  }
+
+  // 3. Fall back to the last level-1 or level-2 heading in past pages
+  let past-headings = query(
+    heading.where(level: 1).or(heading.where(level: 2)).before(here()),
+  )
+  if past-headings != () {
+    return (
+      heading-of-page: past-headings.last(),
+      heading-on-this-page: false,
+    )
+  }
+
+  return (
+    heading-of-page: none,
+    heading-on-this-page: false,
+  )
+}
+
+// Add page header, for all pages.
+#let page-header(current-page) = {
+  let (heading-of-page, heading-on-this-page) = find-heading(current-page)
+  if heading-of-page == none { return }
+  // If the page has a chapter heading, then we don't add a page header.
+  if heading-of-page.level == 1 and heading-on-this-page { return }
+
+  let chapter-num = counter(heading).at(heading-of-page.location())
+  let formatted = (
+    num: text(style: "italic")[
+      #numbering(heading-of-page.numbering, ..chapter-num)
+    ],
+    divider: box(line(length: 10em, angle: 90deg, stroke: 0.8pt)),
+    heading: text(style: "italic")[#heading-of-page.body],
+  )
+
+  let page-num = counter(page).get().first()
+  if calc.odd(page-num) {
+    marginalia.wideblock(align(right)[
+      #formatted.heading
+      #h(1em)
+      #formatted.divider
+      #h(1em)
+      #box(width: 1cm)[#align(right.inv())[#formatted.num]]
+    ])
+  } else {
+    marginalia.wideblock(align(left)[
+      #box(width: 1cm)[#align(left.inv())[#formatted.num]]
+      #h(1em)
+      #formatted.divider
+      #h(1em)
+      #formatted.heading
+    ])
+  }
+}
+
 #let setup-impl(opts, body) = {
   // --- HELPER FUNCTION ---
   // Forces the next content to start on an odd-numbered (right-hand) page
@@ -149,11 +287,12 @@
     set heading(numbering: "1.1")
 
     // Configure marginalia layout (side notes)
-    let note-width = opts.margin-note-metrics.width
-    let note-sep = opts.margin-note-metrics.sep
-    let breakout-width = note-width + note-sep
     show: marginalia.setup.with(
-      outer: (width: note-width, sep: note-sep, far: 2cm),
+      outer: (
+        width: opts.margin-note-metrics.width,
+        sep: opts.margin-note-metrics.sep,
+        far: 2cm,
+      ),
       book: true, // Alternates margins per page
     )
 
@@ -162,70 +301,7 @@
       number-align: center + top,
       header: context {
         let current-page = here().page()
-
-        let heading-to-show = none
-        let page-has-level-1 = false
-        // 1. Look for a level-1 heading starting on this EXACT page
-        let headings-on-page = query(heading.where(level: 1)).filter(
-          h => h.location().page() == current-page,
-        )
-        if headings-on-page.len() > 0 {
-          heading-to-show = headings-on-page.first()
-          page-has-level-1 = true
-        } else {
-          // 2. Look for a level-2 heading starting on this EXACT page
-          let headings-on-page = query(heading.where(level: 2)).filter(
-            h => h.location().page() == current-page,
-          )
-          if headings-on-page.len() > 0 {
-            heading-to-show = headings-on-page.first()
-          } else {
-            // 3. Fall back to the last level-1 or level-2 heading in past pages
-            let past-headings = query(heading.where(level: 1).or(heading.where(level: 2)).before(here()))
-            if past-headings != () {
-              heading-to-show = past-headings.last()
-            }
-          }
-        }
-
-        // If there's a heading to show, take its number and construct the layout
-        if heading-to-show != none {
-          let chapter-num = counter(heading).at(heading-to-show.location())
-          let formatted = if heading-to-show.level == 1 and page-has-level-1 {
-            (
-              num: [],
-              divider: [],
-              heading: [],
-            )
-          } else {
-            (
-              num: text(style: "italic")[
-                #numbering(heading-to-show.numbering, ..chapter-num)
-              ],
-              divider: box(line(length: 10em, angle: 90deg, stroke: 0.8pt)),
-              heading: text(style: "italic")[#heading-to-show.body],
-            )
-          }
-
-          let page-num = counter(page).get().first()
-          if calc.odd(page-num) {
-            marginalia.wideblock(align(right)[
-              #formatted.heading
-              #h(1em)
-              #formatted.divider
-              #h(1em)
-              #box(width: 1cm)[#align(right.inv())[#formatted.num]]
-            ])
-          } else {
-            marginalia.wideblock(align(left)[
-              #box(width: 1cm)[#align(left.inv())[#formatted.num]]
-              #h(1em)
-              #formatted.divider
-              #h(1em)
-              #formatted.heading
-            ])
-          }
-        }
+        page-header(current-page)
       },
       footer: context {
         let page-num = counter(page).get().first()
@@ -256,67 +332,10 @@
       counter(footnote).update(0)
       marginalia.notecounter.update(0)
 
-      let page-num = counter(page).get().first()
       if it.numbering == none {
         text(size: 1.5em)[#it.body]
       } else {
-        let formatted = (
-          heading: text(size: 1.5em)[#it.body],
-          num: text(size: 3em)[
-            #numbering(it.numbering, counter(heading).at(it.location()).first())
-          ],
-        )
-        if calc.odd(page-num) {
-          let chapter-header = align(right)[
-            #box(width: page.width - opts.margin-note-metrics.width * 2)[
-              #set par(justify: false)
-              #formatted.heading
-            ]
-            #h(1em)
-            #box(width: opts.margin-note-metrics.width)[
-              #align(right.inv())[#h(1em)#formatted.num]
-            ]
-          ]
-          marginalia.wideblock([
-            #place(
-              top + right,
-              dx: -opts.margin-note-metrics.width - opts.margin-note-metrics.sep / 2,
-              dy: measure(chapter-header).height,
-              line(
-                // A sufficiently long line, extending above the page top
-                length: page.height,
-                angle: 270deg,
-              ),
-            )
-            #chapter-header
-            #v(1em)
-          ])
-        } else {
-          let chapter-header = align(left)[
-            #box(width: opts.margin-note-metrics.width)[
-              #align(left.inv())[#formatted.num#h(1em)]
-            ]
-            #h(1em)
-            #box(width: page.width - opts.margin-note-metrics.width * 2)[
-              #set par(justify: false)
-              #formatted.heading
-            ]
-          ]
-          marginalia.wideblock([
-            #place(
-              top + left,
-              dx: opts.margin-note-metrics.width + opts.margin-note-metrics.sep / 2,
-              dy: measure(chapter-header).height,
-              line(
-                // A sufficiently long line, extending above the page top
-                length: page.height,
-                angle: 270deg,
-              ),
-            )
-            #chapter-header
-            #v(1em)
-          ])
-        }
+        chapter-header(it, opts.margin-note-metrics)
       }
 
       // Inject the mini-TOC right below the chapter heading
@@ -324,10 +343,8 @@
         marginalia.note(
           numbering: none,
           box(
-            width: note-width,
-            text(style: "italic")[
-              #chapter-suboutline(it, depth: 1)
-            ],
+            width: opts.margin-note-metrics.width,
+            text(style: "italic", chapter-suboutline(it, depth: 1)),
           ),
         )
       }

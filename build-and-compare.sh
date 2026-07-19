@@ -7,7 +7,7 @@ typst compile $SRC $OUT
 echo "built: $(du -sh $OUT)"
 
 if diff -q $REF $OUT >/dev/null 2>&1; then
-    echo "diff result: identical ✓"
+    printf "\033[32mdiff result: identical ✓\n\033[0m"
 else
-    echo "diff result: different ✗"
+    printf "\033[33mdiff result: different ✗\n\033[0m"
 fi
