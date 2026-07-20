@@ -405,11 +405,6 @@
       set heading(numbering: "I.1")
       is-chapter-appendix.update(true)
 
-      show heading.where(level: 1): it => {
-        text(size: 1em)[#it]
-        v(1em)
-      }
-
       for appendix in opts.appendices.chapters {
         appendix
       }
