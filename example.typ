@@ -13,7 +13,7 @@
   title-head: "Typst Template for Books",
   author: "Leedehai",
   publisher: "The Typst Community",
-  versioning: (build-date: "[year]-[month]-[day]", version: "v0.1.0"),
+  versioning: (build-date: none /*"[year]-[month]-[day]"*/, version: "v0.1.0"),
   paper-size: "us-letter",
   copyright-page: [#align(bottom)[© 2026 Leedehai.]
   ],

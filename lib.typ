@@ -160,7 +160,7 @@
 // Add page header, for all pages.
 #let page-header(current-page) = {
   let (heading-of-page, heading-on-this-page) = find-heading(current-page)
-  if heading-of-page == none { return }
+  if heading-of-page == none or heading-of-page.numbering == none { return }
   // If the page has a chapter heading, then we don't add a page header.
   if heading-of-page.level == 1 and heading-on-this-page { return }
 
@@ -212,6 +212,16 @@
     } // Scoped
   }
 
+  let cover-page-sub-content(config, s) = {
+    if config.font != auto {
+      // text(font: auto) is not accepted, so we have to use an if-condition.
+      set text(font: config.font)
+      text(size: config.size, weight: config.weight)[#s]
+    } else {
+      text(size: config.size, weight: config.weight)[#s]
+    }
+  }
+
   // ------------------------------- FRONTMATTER -------------------------------
   {
     odd-pagebreak()
@@ -232,13 +242,13 @@
       }
       #align(center)[
         #v(1fr)
-        #text(size: 28pt, weight: "bold")[#opts.title] \
+        #cover-page-sub-content(opts.cover-page-fonts.title, opts.title) \
         #v(1em)
-        #text(size: 21pt)[#opts.subtitle] \
+        #cover-page-sub-content(opts.cover-page-fonts.subtitle, opts.subtitle) \
         #v(2fr)
-        #text(size: 21pt)[#opts.author]
+        #cover-page-sub-content(opts.cover-page-fonts.author, opts.author)
         #v(1em)
-        #text(size: 16pt)[#opts.publisher]
+        #cover-page-sub-content(opts.cover-page-fonts.publisher, opts.publisher)
         #v(1em)
       ]
     ]
@@ -418,12 +428,20 @@
     set heading(numbering: none)
     set page(numbering: "1")
 
+    if opts.bibliography != none {
+      odd-pagebreak()
+      show heading.where(level: 1): it => {
+        text(size: 1.5em)[#it]
+      }
+      opts.bibliography
+    }
+
     if opts.show-index {
       odd-pagebreak()
       show heading.where(level: 1): it => {
         text(size: 1.5em)[#it]
       }
-      [= Index]
+      [= #opts.i10n-texts.index]
       v(1em)
       // This font is embedded in Typst.
       set text(font: "DejaVu Sans Mono", size: 0.9em)
