@@ -13,6 +13,22 @@
   quote(block: true, attribution: attribution, body)
 }
 
+#let weblink-impl(url, content) = {
+  let display = if content == none {
+    [#show raw: set text(fill: blue);#underline(raw(url))] // No whitespaces.
+  } else {
+    set text(fill: blue)
+    underline(content)
+  }
+  link(url)[#display]
+}
+
+// The metadata holder. Access with `#book.meta`.
+#let meta-holder = state("the-flow-book-meta", (:))
+#let meta-impl(key) = {
+  meta-holder.get().at(key)
+}
+
 #let chapter-suboutline(
   chapter-heading,
   depth: none,
@@ -205,6 +221,17 @@
 // The template.
 #let setup-impl(opts, body) = {
   // --------------------------------- GLOBAL ----------------------------------
+  meta-holder.update(
+    (
+      title: opts.title,
+      subtitle: opts.subtitle,
+      author: opts.author,
+      publisher: opts.publisher,
+      versioning: opts.versioning,
+    )
+      + opts.meta-dict,
+  )
+
   set page(paper: opts.paper-size)
   set super(size: 0.8em)
 

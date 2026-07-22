@@ -13,7 +13,7 @@
 #import "@preview/marginalia:0.3.1" as marginalia
 #import "@preview/in-dexter:0.7.2" as in-dexter
 
-#import "lib.typ": quote-impl, setup-impl
+#import "lib.typ": meta-impl, quote-impl, setup-impl, weblink-impl
 
 /// Put a side note. Usage:
 /// ```
@@ -67,6 +67,28 @@
 /// -> content
 #let quote(body, attribution: none) = quote-impl(body, attribution: attribution)
 
+/// Add a link with color. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #book.weblink("https://typst.app")[Typst]
+/// ```
+/// - url (str): the web link URL.
+/// - content (content, none): The content that is a link. If none, display url.
+/// -> content
+#let weblink(url, content) = weblink-impl(url, content)
+
+/// A container for non-contextual book metadata holding title, subtitle,
+/// author, etc. and more key-value pairs added in the setup call. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #show book.setup.with(..., meta: (editor: "Magic Wand"))
+/// #book.meta.get("author")
+/// #book.meta.get("editor")
+/// ```
+/// - key (str): the key.
+/// -> any
+#let meta(key) = context meta-impl(key)
+
 /// The default i10n mapping dictionary. To override some of them:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
@@ -102,13 +124,6 @@
   publisher: (font: auto, size: 16pt, weight: "regular"),
 )
 
-/// Computes the area of a rectangle.
-///
-/// - width (length, ratio): The horizontal width.
-/// - height (length): The vertical height.
-/// -> length
-#let area(width, height) = width * height
-
 /// The setup. Usage:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
@@ -142,6 +157,7 @@
 /// - cover-page-fonts (dictionary): to config various fonts on cover page,
 /// - margin-note-metrics (dictionary): to config margin notes
 /// - i10-texts (dictionary): to config translations for texts in template
+/// - meta-dict (dictionary): key-values that can be exposed by `#meta`
 /// - body (content): the book chapters
 #let setup(
   title: "",
@@ -166,6 +182,7 @@
   cover-page-fonts: cover-page-fonts-defaults,
   margin-note-metrics: (width: 5.2cm, sep: 1em),
   i10n-texts: i10-texts-defaults,
+  meta-dict: (:),
   body,
 ) = {
   let opts = (
@@ -191,6 +208,7 @@
     cover-page-fonts: cover-page-fonts,
     margin-note-metrics: margin-note-metrics,
     i10n-texts: i10n-texts,
+    meta-dict: meta-dict,
   )
   setup-impl(opts, body)
 }
