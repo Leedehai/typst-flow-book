@@ -5,6 +5,14 @@
 #import "@preview/marginalia:0.3.1" as marginalia
 #import "@preview/in-dexter:0.7.2": make-index
 
+#let quote-impl(body, attribution: none) = {
+  show quote: it => block(inset: (x: 1em), spacing: auto)[
+    #emph(it.body)
+    #if it.attribution != none { align(right)[-- #it.attribution] }
+  ]
+  quote(block: true, attribution: attribution, body)
+}
+
 #let chapter-suboutline(
   chapter-heading,
   depth: none,

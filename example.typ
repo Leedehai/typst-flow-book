@@ -15,8 +15,7 @@
   publisher: "The Typst Community",
   versioning: (build-date: none /*"[year]-[month]-[day]"*/, version: "v0.1.0"),
   paper-size: "us-letter",
-  copyright-page: [#align(bottom)[© 2026 Leedehai.]
-  ],
+  copyright-page: [#align(bottom)[© 2026 Leedehai.]],
   dedication-page: [#include "example-dedication.typ"],
   preface: [#lorem(200)],
   show-table-of-contents: true,
@@ -95,5 +94,8 @@ Desktop computer here#book.index("computer!desktop"). Also a dog#book.index[dog]
 
 == Futher works
 
+#book.quote[#lorem(20)]
+
 #lorem(200)#book.note[This is a side note. #lorem(20)]#footnote[This is a footnote.]
-// #include "example-chapter.typ"
+
+#book.quote(attribution: [Newton])[#lorem(20)]

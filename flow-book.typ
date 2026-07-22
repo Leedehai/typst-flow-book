@@ -13,7 +13,7 @@
 #import "@preview/marginalia:0.3.1" as marginalia
 #import "@preview/in-dexter:0.7.2" as in-dexter
 
-#import "lib.typ": setup-impl
+#import "lib.typ": quote-impl, setup-impl
 
 /// Put a side note. Usage:
 /// ```
@@ -55,6 +55,17 @@
 /// ```
 /// More usage in the documentation of package `in-dexter`.
 #let index = in-dexter.index
+
+/// Add a block quote. Usage:
+/// ```
+/// #import "@preview/flow-book:x.y.z" as book
+/// #book.quote[...]
+/// #book.quote(attribution: [Newton])[...]
+/// ```
+/// - body (content): the quoted body
+/// - attribution (content, label, none): the attribution, skipped if none
+/// -> content
+#let quote(body, attribution: none) = quote-impl(body, attribution: attribution)
 
 /// The default i10n mapping dictionary. To override some of them:
 /// ```
