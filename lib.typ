@@ -235,6 +235,18 @@
   set page(paper: opts.paper-size)
   set super(size: 0.8em)
 
+  show bibliography: bib => {
+    show link: l => {
+      if type(l.dest) == str and l.body.func() != raw and l.body.has("text") {
+        show raw: set text(fill: blue)
+        link(l.dest, underline(raw(l.body.text)))
+      } else {
+        l
+      }
+    }
+    bib
+  }
+
   let odd-pagebreak() = {
     {
       show pagebreak.where(to: "odd", weak: true): set page(
@@ -414,7 +426,7 @@
           numbering: none,
           box(
             width: opts.margin-note-metrics.width,
-            text(style: "italic", chapter-suboutline(it, depth: 1)),
+            text(style: "italic", size: 8pt, chapter-suboutline(it, depth: 1)),
           ),
         )
       }

@@ -19,10 +19,13 @@
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
 /// foo#book.note[This is a side note]
+/// ...
+/// foo#book.note(dy: -1em)[This is a side note, but moved upward by 1em.]
 /// ```
 /// More usage in the documentation of package `marginalia`.
 #let note = marginalia.note.with(
   numbering: (.., n) => super(text(fill: eastern)[#numbering("a", n)]),
+  text-style: (size: 8pt),
 )
 
 /// Put a side note figure. Use `dy` to adjust y-position if needed.
@@ -33,7 +36,7 @@
 /// foo#book.notefigure[This is a side note]
 /// ```
 /// More usage in the documentation of package `marginalia`.
-#let notefigure = marginalia.notefigure
+#let notefigure = marginalia.notefigure.with(text-style: (size: 8pt))
 
 /// Put a block of content that occupies both the main text and the
 /// margin that's otherwise reserved for side ntoes. Useful for
@@ -45,7 +48,7 @@
 /// More usage in the documentation of package `marginalia`.
 #let wideblock = marginalia.wideblock
 
-/// Add a index. Usage:
+/// Add an index. Usage:
 /// ```
 /// #import "@preview/flow-book:x.y.z" as book
 /// This is called a dog#book.index[dog].
