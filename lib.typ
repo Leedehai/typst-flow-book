@@ -269,6 +269,14 @@
     }
   }
 
+  let reset-counters() = {
+    counter(heading).update(0)
+    counter(math.equation).update(0)
+    counter(figure.where(kind: image)).update(0)
+    counter(figure.where(kind: table)).update(0)
+    counter(figure.where(kind: raw)).update(0)
+  }
+
   // ------------------------------- FRONTMATTER -------------------------------
   {
     odd-pagebreak()
@@ -324,7 +332,7 @@
     if opts.foreword != none {
       odd-pagebreak()
       set page(numbering: "i")
-      counter(heading).update(0)
+      reset-counters()
       heading(level: 1, numbering: none)[#opts.i10n-texts.forward]
       opts.foreword
     }
@@ -332,7 +340,7 @@
     if opts.preface != none {
       odd-pagebreak()
       set page(numbering: "i")
-      counter(heading).update(0)
+      reset-counters()
       heading(level: 1, numbering: none)[#opts.i10n-texts.preface]
       opts.preface
     }
@@ -362,7 +370,7 @@
   // ------------------------ BODY (MAIN AND APPENDICES) -----------------------
   {
     odd-pagebreak()
-    counter(heading).update(0)
+    reset-counters()
 
     set par(justify: true)
     set heading(numbering: "1.1")
@@ -445,7 +453,7 @@
     body // This is the main body
 
     if opts.appendices.chapters.len() != 0 {
-      counter(heading).update(0)
+      reset-counters()
       odd-pagebreak()
 
       {
@@ -470,7 +478,7 @@
 
   // ------------------------------- BACKMATTER --------------------------------
   {
-    counter(heading).update(0)
+    reset-counters()
     set par(justify: true)
     set heading(numbering: none)
     set page(numbering: "1")
